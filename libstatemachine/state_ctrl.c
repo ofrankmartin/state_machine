@@ -31,8 +31,10 @@ int stateCtrlInitState(StateCtrlStateHandle *handle, const char *const stateName
         return -1;
 
     newState->properties = calloc(1, sizeof(*(_statesList->properties)));
-    if (newState->properties == NULL)
+    if (newState->properties == NULL) {
+        free(newState);
         return -1;
+    }
 
     newState->properties->stateDataPtr = stateDataPtr;
     newState->properties->beginStateCallback = beginStateCallback;
@@ -52,6 +54,8 @@ int stateCtrlInitState(StateCtrlStateHandle *handle, const char *const stateName
         _nextState = _statesList;
     }
     newState->properties->handle = *handle;
+
+    return 0;
 }
 
 int stateCtrlDeinitState(StateCtrlStateHandle *handle)
@@ -62,9 +66,11 @@ int stateCtrlDeinitState(StateCtrlStateHandle *handle)
             state->prev->next = state->next;
         if (state->next)
             state->next->prev = state->prev;
+        free(state->properties);
+        free(state);
     }
-    free(state->properties);
-    free(state);
+
+    return 0;
 }
 
 int stateCtrlLoopCurrentState(void)
@@ -104,6 +110,8 @@ int stateCtrlGoToNextState(void)
         executeStateCallback(_currentState->properties->beginStateCallback,
                              _currentState->properties->stateDataPtr);
     }
+
+    return 0;
 }
 
 int stateCtrlGoToState(StateCtrlStateHandle *nextState)
