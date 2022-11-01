@@ -1,11 +1,11 @@
-#include "smachine.h"
+#include "state_ctrl.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 typedef struct StatesListItem_s {
-    StateProperties_t *properties;
+    StateCtrlStateProperties_t *properties;
     struct StatesListItem_s *next;
     struct StatesListItem_s *prev;
 } StatesListItem_t;
@@ -17,15 +17,15 @@ static StatesListItem_t *_nextState = NULL;
 static StatesListItem_t *_prevState = NULL;
 
 // Private Prototypes
-StatesListItem_t *findStateItem(StateHandle *handle);
-int executeStateCallback(StateCallback *callback, StateData_t *data);
+StatesListItem_t *findStateItem(StateCtrlStateHandle *handle);
+int executeStateCallback(StateCtrlStateCallback *callback, StateCtrlStateData_t *data);
 
 // Factory implementation
-int initState(StateHandle *handle, const char *const stateName,
-              StateData_t *stateDataPtr, StateCallback *beginStateCallback,
-              StateCallback *loopStateCallback, StateCallback *endStateCallback)
+int stateCtrlInitState(StateCtrlStateHandle *handle, const char *const stateName,
+              StateCtrlStateData_t *stateDataPtr, StateCtrlStateCallback *beginStateCallback,
+              StateCtrlStateCallback *loopStateCallback, StateCtrlStateCallback *endStateCallback)
 {
-    *handle = NO_STATE;
+    *handle = STATE_CTRL_NO_STATE;
     StatesListItem_t *newState = calloc(1, sizeof(*newState));
     if (newState == NULL)
         return -1;
@@ -38,7 +38,7 @@ int initState(StateHandle *handle, const char *const stateName,
     newState->properties->beginStateCallback = beginStateCallback;
     newState->properties->loopStateCallback = loopStateCallback;
     newState->properties->endStateCallback = endStateCallback;
-    snprintf(newState->properties->stateName, STATE_NAME_LEN, "%s", stateName);
+    snprintf(newState->properties->stateName, STATE_CTRL_STATE_NAME_LEN, "%s", stateName);
 
     if (_statesList) {
         *handle = _lastState->properties->handle + 1;
@@ -54,7 +54,7 @@ int initState(StateHandle *handle, const char *const stateName,
     newState->properties->handle = *handle;
 }
 
-int deinitState(StateHandle *handle)
+int stateCtrlDeinitState(StateCtrlStateHandle *handle)
 {
     StatesListItem_t *state = findStateItem(handle);
     if (state) {
@@ -67,7 +67,7 @@ int deinitState(StateHandle *handle)
     free(state);
 }
 
-int loopCurrentState(void)
+int stateCtrlLoopCurrentState(void)
 {
     if (_currentState) {
         return executeStateCallback(
@@ -78,14 +78,14 @@ int loopCurrentState(void)
     return 0;
 }
 
-int setNextState(StateHandle *nextState)
+int stateCtrlSetNextState(StateCtrlStateHandle *nextState)
 {
     // TODO check if the state exists
     _nextState = findStateItem(nextState);
     return 0;
 }
 
-int goToNextState(void)
+int stateCtrlGoToNextState(void)
 {
     // End current state
     if (_currentState) {
@@ -106,35 +106,35 @@ int goToNextState(void)
     }
 }
 
-int goToState(StateHandle *nextState)
+int stateCtrlGoToState(StateCtrlStateHandle *nextState)
 {
     // TODO Handle errors
-    setNextState(nextState);
-    return goToNextState();
+    stateCtrlSetNextState(nextState);
+    return stateCtrlGoToNextState();
 }
 
-int getCurrentStateProperties(StateProperties_t **stateProperties)
+int stateCtrlGetCurrentStateProperties(StateCtrlStateProperties_t **stateProperties)
 {
     StatesListItem_t *item = _currentState;
     *stateProperties = item ? item->properties : NULL;
     return 0;
 }
 
-int getNextStateProperties(StateProperties_t **stateProperties)
+int stateCtrlGetNextStateProperties(StateCtrlStateProperties_t **stateProperties)
 {
     StatesListItem_t *item = _nextState;
     *stateProperties = item ? item->properties : NULL;
     return 0;
 }
 
-int getPrevStateProperties(StateProperties_t **stateProperties)
+int stateCtrlGetPrevStateProperties(StateCtrlStateProperties_t **stateProperties)
 {
     StatesListItem_t *item = _prevState;
     *stateProperties = item ? item->properties : NULL;
     return 0;
 }
 
-int getStatePropertiesByName(const char * const stateName, StateProperties_t **stateProperties)
+int stateCtrlGetStatePropertiesByName(const char * const stateName, StateCtrlStateProperties_t **stateProperties)
 {
     StatesListItem_t *currItem = _statesList;
     while (currItem != NULL) {
@@ -149,7 +149,7 @@ int getStatePropertiesByName(const char * const stateName, StateProperties_t **s
 }
 
 // Private implementation
-StatesListItem_t *findStateItem(StateHandle *handle)
+StatesListItem_t *findStateItem(StateCtrlStateHandle *handle)
 {
     StatesListItem_t *currItem = _statesList;
     while (currItem != NULL) {
@@ -162,7 +162,7 @@ StatesListItem_t *findStateItem(StateHandle *handle)
     return currItem;
 }
 
-int executeStateCallback(StateCallback *callback, StateData_t *data)
+int executeStateCallback(StateCtrlStateCallback *callback, StateCtrlStateData_t *data)
 {
     if (callback)
         return callback(data);

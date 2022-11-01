@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "libsmachine/smachine.h"
+#include <state_ctrl.h>
 #include "states/state_user_setup.h"
 #include "states/state_idle.h"
 
@@ -23,27 +23,27 @@ int main(int argc, char **argv)
 
     sigaction(SIGINT, &signal_handler, NULL);
 
-    StateData_t stateData = {.someData = 0, .nextState = NO_STATE};
+    StateCtrlStateData_t stateData = {.someData = 0, .nextState = STATE_CTRL_NO_STATE};
 
-    StateHandle userSetupState = NO_STATE;
+    StateCtrlStateHandle userSetupState = STATE_CTRL_NO_STATE;
     INIT_STATE(userSetup, &stateData);
 
-    StateHandle idleState = NO_STATE;
+    StateCtrlStateHandle idleState = STATE_CTRL_NO_STATE;
     INIT_STATE(idle, &stateData);
 
-    goToState(&userSetupState);
+    stateCtrlGoToState(&userSetupState);
 
     while (!_doExit) {
-        loopCurrentState();
-        StateProperties_t *currStateProperties = NULL;
-        getCurrentStateProperties(&currStateProperties);
+        stateCtrlLoopCurrentState();
+        StateCtrlStateProperties_t *currStateProperties = NULL;
+        stateCtrlGetCurrentStateProperties(&currStateProperties);
         if (currStateProperties == NULL) {
             _doExit = true;
         }
     }
 
     // Cleaning up state
-    deinitState(&userSetupState);
+    stateCtrlDeinitState(&userSetupState);
 
     printf("\nExiting...\n");
 
